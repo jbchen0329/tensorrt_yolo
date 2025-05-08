@@ -26,22 +26,47 @@ find_package(CUDAToolkit REQUIRED)
 
 # 允许用户覆盖默认的 CUDA 架构
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES "89;86;75;70;61")  # 默认支持架构
+    set(CMAKE_CUDA_ARCHITECTURES "89")  # 默认支持架构
 endif()
 
 # TensorRT 路径配置
 set(TRT_PATH "" CACHE PATH "Path to TensorRT installation (e.g., /usr/local/tensorrt)")
 if(NOT TRT_PATH)
-    message(FATAL_ERROR "TensorRT path must be specified with -DTRT_PATH=/path/to/tensorrt")
+    find_path(TRT_INCLUDE_DIR NvInfer.h
+        PATHS
+            /usr/include/aarch64-linux-gnu
+            /usr/local/TensorRT/include
+        DOC "Path to TensorRT include directory"
+    )
+
+    find_library(TRT_LIBRARY nvinfer
+        PATHS
+            /usr/lib/aarch64-linux-gnu
+            /usr/local/TensorRT/lib
+        DOC "Path to TensorRT library"
+    )
+else()
+    # 如果指定了 TRT_PATH，则直接使用该路径
+    set(TRT_INCLUDE_DIR "${TRT_PATH}/include")
+    set(TRT_LIBRARY "${TRT_PATH}/lib/libnvinfer.so")
 endif()
 
-# 定义 TensorRT 库的版本选择
-set(TRT_LIB_DIR "${TRT_PATH}/lib")
-if(MSVC AND EXISTS "${TRT_LIB_DIR}/nvinfer_10.dll")
-    set(TRT_LIBS nvinfer_10 nvinfer_plugin_10 nvonnxparser_10)
-else()
-    set(TRT_LIBS nvinfer nvinfer_plugin nvonnxparser)
+# 检查是否找到 TensorRT
+if(NOT TRT_INCLUDE_DIR OR NOT TRT_LIBRARY)
+    message(FATAL_ERROR "TensorRT not found. Please ensure it is installed or specify -DTRT_PATH=/path/to/tensorrt")
 endif()
+
+# if(NOT TRT_PATH)
+#     message(FATAL_ERROR "TensorRT path must be specified with -DTRT_PATH=/path/to/tensorrt")
+# endif()
+
+# # 定义 TensorRT 库的版本选择
+# set(TRT_LIB_DIR "${TRT_PATH}/lib")
+# if(MSVC AND EXISTS "${TRT_LIB_DIR}/nvinfer_10.dll")
+#     set(TRT_LIBS nvinfer_10 nvinfer_plugin_10 nvonnxparser_10)
+# else()
+#     set(TRT_LIBS nvinfer nvinfer_plugin nvonnxparser)
+# endif()
 
 # Python 绑定选项
 option(BUILD_PYTHON "Build Python bindings with pybind11" OFF)

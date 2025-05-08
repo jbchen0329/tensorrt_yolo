@@ -25,3 +25,5 @@ outputs/
 images/
 
 python/tensorrt_yolo/c_lib_wrap.py
+
+compile_commands.json
